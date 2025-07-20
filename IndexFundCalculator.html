@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>指數基金計算</title>
+  <style>
+    body {
+      font-family: 'Noto Sans TC', Arial, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+    .container {
+      max-width: 420px;
+      background: #fff;
+      margin: 24px auto;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      color: #2962ff;
+      text-align: center;
+    }
+    h2 {
+      font-size: 1.1rem;
+      margin-top: 24px;
+      color: #009688;
+    }
+    label {
+      display: block;
+      margin: 10px 0 3px 0;
+      font-size: 1rem;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 7px;
+      font-size: 1rem;
+      border: 1px solid #cfd8dc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 1.1rem;
+      background: #2962ff;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      margin-top: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #0039cb;
+    }
+    .result {
+      margin-top: 24px;
+      background: #e3f2fd;
+      padding: 18px;
+      border-radius: 8px;
+      color: #1565c0;
+      font-size: 1.08rem;
+    }
+    .chart-container {
+		width: 100%;
+		max-width: 400px;
+		overflow-x: auto;
+		margin-top: 24px;
+	}
+	canvas {
+		background: #fff;
+		border-radius: 8px;
+		box-shadow: 0 2px 8px rgba(41,98,255,0.02);
+		display: block;
+		margin: 0 auto;
+	}
+    @media (max-width: 480px) {
+      .container {
+        margin: 8px;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>指數基金計算</h1>
+    <div>
+      <label for="start">初始投資（一次性）</label>
+      <input type="number" id="start" value="20000" min="0" step="100">
+      <label for="perMonth">每月投入</label>
+      <input type="number" id="perMonth" value="1000" min="0" step="10">
+      <label for="years">投資年期（年）</label>
+      <input type="number" id="years" value="20" min="1" max="60">
+      <label for="fundRate">指數基金年回報率（%）</label>
+      <input type="number" id="fundRate" value="8" min="1" max="15" step="0.1">
+      <label for="bankRate">銀行定存年利率（%）</label>
+      <input type="number" id="bankRate" value="1.5" min="0" max="10" step="0.1">
+      <button onclick="calculate()">計算</button>
+    </div>
+    <div class="result" id="result"></div>
+    <div class="chart-container">
+      <canvas id="wealthChart" width="400" height="210"></canvas>
+    </div>
+    <h2>提示</h2>
+    <ul style="font-size:0.97rem;line-height:1.7;">
+      <li>指數基金在扣除通脹後，年回報率通常為8-10%</li>
+      <li>銀行定存的年回報率通常為0.5-2%</li>
+      <li>日後如果加薪增加每月投入，回報增長會更快</li>
+    </ul>
+  </div>
+  <script>
+    function numberWithCommas(x) {
+      return x.toLocaleString('zh-Hant', {maximumFractionDigits: 0});
+    }
+    function calculate() {
+      let start = parseFloat(document.getElementById('start').value) || 0;
+      let perMonth = parseFloat(document.getElementById('perMonth').value) || 0;
+      let years = parseInt(document.getElementById('years').value) || 1;
+      let fundRate = parseFloat(document.getElementById('fundRate').value) / 100;
+      let bankRate = parseFloat(document.getElementById('bankRate').value) / 100;
+
+      let months = years * 12;
+      let fundWealth = [];
+      let bankWealth = [];
+      let fund = start, bank = start;
+
+      for (let i = 0; i <= months; i++) {
+        fundWealth.push(fund);
+        bankWealth.push(bank);
+        if (i % 12 === 0 && i !== 0) { // 年結算
+          fund = fund * (1 + fundRate);
+          bank = bank * (1 + bankRate);
+        }
+        fund += perMonth;
+        bank += perMonth;
+      }
+
+      let totalFund = fundWealth[months];
+      let totalBank = bankWealth[months];
+
+      let resultStr = `<b>模擬結果（${years}年後）：</b><br><br>
+        <b style="color:#2962ff;">指數基金</b> = <b>$ ${numberWithCommas(Math.round(totalFund))}</b><br>
+		<a style="color:grey;">(最後一年平均月回報 $ ${numberWithCommas(Math.round((totalFund-totalFund/(1+fundRate))/12))})</b><br><br>
+        <b style="color:#009688;">銀行定存</b><a style="color:#009688;"> = </a><b style="color:#009688;">$ ${numberWithCommas(Math.round(totalBank))}</b><br>
+		<a style="color:grey;">(最後一年平均月回報 $ ${numberWithCommas(Math.round((totalBank-totalBank/(1+bankRate))/12))})</b><br>
+        <br><b style="color:#2962ff;">差距：</b><b style="color:#d32f2f;">$ ${numberWithCommas(Math.round(totalFund-totalBank))} (${Math.round((totalFund-totalBank)/totalFund*100)}%)</b>`;
+
+      document.getElementById('result').innerHTML = resultStr;
+
+      drawChart(fundWealth, bankWealth, years);
+    }
+
+    function drawChart(fundData, bankData, years) {
+      let canvas = document.getElementById('wealthChart');
+      let ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 填充底色
+      ctx.fillStyle = "#f5f7fa";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+
+      // Y軸最大值
+      let max = Math.max(...fundData, ...bankData);
+      max = Math.ceil(max/5000)*5000;
+
+      // 縱軸
+      ctx.beginPath();
+      ctx.strokeStyle = "#b0bec5";
+      ctx.moveTo(60,20); ctx.lineTo(60,180);
+      ctx.lineTo(310,180);
+      ctx.stroke();
+
+      // Y軸標籤
+      ctx.fillStyle = "#607d8b";
+      ctx.font = "12px Arial";
+      for(let i=0; i<=4; i++){
+        let val = max*i/4;
+        ctx.fillText(numberWithCommas(Math.round(val)), 7, 180-40*i+5);
+        ctx.beginPath();
+        ctx.strokeStyle="#e0e0e0";
+        ctx.moveTo(60,180-40*i); ctx.lineTo(290,180-40*i);
+        ctx.stroke();
+      }
+
+      // X軸標籤
+      ctx.font = "11px Arial";
+      for(let i=0; i<=years; i+=Math.max(1,Math.floor(years/5))){
+        let x = 60 + (250)*i/years;
+        ctx.fillText(`${i}年`, x-8, 196);
+      }
+
+      // 畫線
+      function plotLine(data, color){
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        for(let i=0; i<data.length; i+=12){
+          let x = 60 + 250*(i/(data.length-1));
+          let y = 180 - 160*(data[i]/max);
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+      }
+      // 指數基金線
+      plotLine(fundData,"#2962ff");
+      // 銀行線
+      plotLine(bankData,"#009688");
+
+      // 標記
+      ctx.fillStyle="#2962ff";
+      ctx.fillRect(325,34,12,12);
+      ctx.fillStyle="#222";
+      ctx.fillText("指數基金", 342, 44);
+
+      ctx.fillStyle="#009688";
+      ctx.fillRect(325,59,12,12);
+      ctx.fillStyle="#222";
+      ctx.fillText("銀行定存", 342, 69);
+    }
+
+    // 初始化
+    calculate();
+  </script>
+</body>
+</html>
