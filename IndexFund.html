@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>指數基金計算</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   </head>
   <style>
       .container {
@@ -20,32 +21,32 @@
         display: table;
         clear: both;
       }
+      table {
+        width: 100%;
+     }
+     th {
+        text-align: left;
+     }
   </style>
   <body>
-    <div class="container">
-      <h1>1指數基金計算</h1>
+    <div class="container" id="container">
+      <h1>指數基金計算</h1>
       <div>
         <label for="start">初始投資</label><br>
         $ <input type="number" id="start" min="0" step="100"><p>
 
         <label for="limited">限期月定投</label><br>
         $ <input type="number" id="limited" min="0" step="100">&nbsp
-        <input type="number" id="limitedY" min="0" max="60"><label for="limitedY"> 年 </label>
+        持續 <input type="number" id="limitedY" min="0" max="60"><label for="limitedY"> 年 </label>
         <input type="number" id="limitedM" min="0" max="11"><label for="limitedM"> 個月</label>
-        <ul>
-            <li>
-                每 <input type="number" id="limitedGrowY" min="0" max="60"><label for="limitedGrowY"> 年 </label>，增加 <!-- max要小於限期 -->
-                <label for="limitedGrow"> $ </label><input type="number" id="limitedGrow" min="0"> / 
-                <input type="number" id="limitedGrowPer" min="0" max="1000"><label for="limitedGrowPer"> %</label>
-            </li>
-        </ul><p>
+        <p>
 
         <label for="continuous">持續月定投</label><br>
         $ <input type="number" id="continuous" min="0" step="100">
         <ul>
             <li>
-                每 <input type="number" id="continuousGrowY" min="0" max="60"><label for="continuousGrowY"> 年</label>，增加 <!-- max要小於兩個投資年期相加 -->
-                <label for="continuousGrow"> $ </label><input type="number" id="continuousGrow" min="0"> / 
+                每 <input type="number" id="continuousGrowY" min="0" max="60"><label for="continuousGrowY"> 年</label>，月投額增加 <!-- max要小於兩個投資年期相加 -->
+                <label for="continuousGrow"> $ </label><input type="number" id="continuousGrow" min="0"> 或 
                 <input type="number" id="continuousGrowPer" min="0" max="1000"><label for="continuousGrowPer"> %</label>
             </li>
         </ul><p>
@@ -71,9 +72,15 @@
         </div>
 
         <button onclick="calculate()">計算</button><p><p>
+
         <p><div id="modeButton"></div></p>
+
         <div class="column" id="table1"></div>
-        <div class="column" id="graph"></div>
+        <canvas class="column" id="graph1"></canvas>
+
+        <div class="column" id="table2"></div>
+        <canvas class="column" id="graph2"></canvas><p>
+
         <div id="cap"></div>
       </div>
     </div>
@@ -82,133 +89,284 @@
     function numberWithCommas(x) {
         return x.toLocaleString('zh-Hant', {maximumFractionDigits: 0});
     }
-    function calculate() {
-    const IWDA_R = [0.8, 0.09, 0.11], VOO_R = [0.1, 0.12, 0.15], QQQM_R = [0.1, 0.15, 0.17];
 
     let mode = 1;
 
-    const fields = [
-        'start', 'limited', 'limitedY', 'limitedM', 'limitedGrowY', 
-        'limitedGrow', 'limitedGrowPer', 'continuous', 'continuousGrowY', 
-        'continuousGrow', 'continuousGrowPer', 'years1', 'IWDA1', 
-        'VOO1', 'QQQM1', 'years2', 'IWDA2', 'VOO2', 'QQQM2'
-    ];
+    function calculate() {
+        const IWDA_R = [0.08, 0.09, 0.11], VOO_R = [0.1, 0.12, 0.15], QQQM_R = [0.1, 0.15, 0.17];
 
-    fields.forEach(field => {
-        const element = document.getElementById(field);
-        element.value = parseFloat(localStorage.getItem(`${field}_`)) || '';
-    
-        element.addEventListener('input', () => {
-            localStorage.setItem(`${field}_`, element.value);
+        const fields = [
+            'start', 'limited', 'limitedY', 'limitedM', 'continuous', 'continuousGrowY', 
+            'continuousGrow', 'continuousGrowPer', 'years1', 'IWDA1', 
+            'VOO1', 'QQQM1', 'years2', 'IWDA2', 'VOO2', 'QQQM2'
+        ];
+
+        fields.forEach(field => {
+            const element = document.getElementById(field);
+            element.value = parseFloat(localStorage.getItem(`${field}_`)) || '';
+        
+            element.addEventListener('input', () => {
+                localStorage.setItem(`${field}_`, element.value);
+            });
         });
-    });
 
-    // 確保所有數值都正確轉換
-    const start = parseFloat(document.getElementById('start').value) || 0;
-    const limited = parseFloat(document.getElementById('limited').value) || 0;
-    const limitedY = parseFloat(document.getElementById('limitedY').value) || 0;
-    const limitedM = parseFloat(document.getElementById('limitedM').value) || 0;
-    const continuous = parseFloat(document.getElementById('continuous').value) || 0;
-    const years1 = parseFloat(document.getElementById('years1').value) || 0;
-    const years2 = parseFloat(document.getElementById('years2').value) || 0;
-    const IWDA1 = parseFloat(document.getElementById('IWDA1').value) || 0;
-    const VOO1 = parseFloat(document.getElementById('VOO1').value) || 0;
-    const QQQM1 = parseFloat(document.getElementById('QQQM1').value) || 0;
-    const IWDA2 = parseFloat(document.getElementById('IWDA2').value) || 0;
-    const VOO2 = parseFloat(document.getElementById('VOO2').value) || 0;
-    const QQQM2 = parseFloat(document.getElementById('QQQM2').value) || 0;
+        // 確保所有數值都正確轉換
+        const start = parseFloat(document.getElementById('start').value) || 0;
+        const limited = parseFloat(document.getElementById('limited').value) || 0;
+        const limitedY = parseFloat(document.getElementById('limitedY').value) || 0;
+        const limitedM = parseFloat(document.getElementById('limitedM').value) || 0;
+        const continuous = parseFloat(document.getElementById('continuous').value) || 0;
+        const continuousGrowY = parseFloat(document.getElementById('continuousGrowY').value) || 0;
+        const continuousGrow = parseFloat(document.getElementById('continuousGrow').value) || 0;
+        const continuousGrowPer = parseFloat(document.getElementById('continuousGrowPer').value) || 0;
+        const years1 = parseFloat(document.getElementById('years1').value) || 0;
+        const years2 = parseFloat(document.getElementById('years2').value) || 0;
+        const IWDA1 = parseFloat(document.getElementById('IWDA1').value) || 0;
+        const VOO1 = parseFloat(document.getElementById('VOO1').value) || 0;
+        const QQQM1 = parseFloat(document.getElementById('QQQM1').value) || 0;
+        const IWDA2 = parseFloat(document.getElementById('IWDA2').value) || 0;
+        const VOO2 = parseFloat(document.getElementById('VOO2').value) || 0;
+        const QQQM2 = parseFloat(document.getElementById('QQQM2').value) || 0;
 
-    if (years1 <= 0 && (limited <= 0 || continuous <= 0) && (IWDA1 <= 0 || VOO1 <= 0 || QQQM1 <= 0)) {
-        alert("「投資年期」、「限期月定投」或「持續月定投」、「配比」必須填寫");
-        return;
-    } else if (IWDA1 + VOO1 + QQQM1 != 100) {
-        alert("配比加起來必須是100%");
-        return;
-    }
+        let totalYears = years1 + years2;
+        let period = 0;
 
-    let totalYears = years1 + years2;
-    let period = 0;
-    
-    const yearRate = [];
-    yearRate[0] = IWDA_R[mode] * IWDA1/100 + VOO_R[mode] * VOO1/100 + QQQM_R[mode] * QQQM1/100;
-    yearRate[1] = IWDA_R[mode] * IWDA2/100 + VOO_R[mode] * VOO2/100 + QQQM_R[mode] * QQQM2/100;
-    
-    const limitedYearly = [];
-    const amount = [], principal = [], yearly = [], yreturn = [], maverage = [];
-
-    // 計算每年限期月定投的總數
-    for (let i = 0; i <= limitedY; i++) {
-        if (i === limitedY && limitedM > 0) {
-            limitedYearly.push(limited * limitedM);
-        } else {
-            limitedYearly.push(limited * 12);
+        if (years1 === 0 && (limited === 0 || continuous === 0) && (IWDA1 === 0 || VOO1 === 0 || QQQM1 === 0)) {
+            alert("「投資年期」、「限期月定投」或「持續月定投」、「配比」必須填寫。");
+            return;
+        } else if (IWDA1 + VOO1 + QQQM1 != 100) {
+            alert("配比加起來必須是100%。");
+            return;
         }
-    }
-    
-    for (let i = 0; i < totalYears; i++) {
-        if (i === years1) {
-            period = 1;
-        }
-        if (i === 0) {
-            yearly[i] = start + limitedYearly[i] + continuous * 12;
-            amount[i] = yearly[i] * (1 + yearRate[0]);
-            principal[i] = yearly[i];
-        } else {
-            if (limitedYearly[i] == true) {
-              yearly[i] = limitedYearly[i] + continuous * 12;
-            } else {
-              yearly[i] = continuous * 12;
+        if (limited > 0) {
+            if ((limitedY === 0 && limitedM === 0)) {
+                alert("限期月定投必須填寫期限。");
+                return;
+            } else if (limitedY > totalYears || (limitedY === totalYears && limitedM > 0)) {
+                alert("限期月定投期限不能大於全投資年期。");
+                return;
             }
-            amount[i] = (amount[i-1] + yearly[i]) * (1 + yearRate[period]);
-            principal[i] = principal[i-1] + yearly[i];
+        }
+        if ((limitedY > 0 || limitedM > 0) && limited === 0) {
+            alert("限期月定投尚未填寫金額。");
+            return;
+        }
+        if (continuousGrowY > 0) {
+            if (continuousGrow > 0 && continuousGrowPer > 0) {
+                alert("月投額增長只能填寫金額或者百分比。");
+                return;
+            } else if (continuousGrow === 0 && continuousGrowPer === 0) {
+                alert("月投額增長必須填寫填金額或者百分比。");
+                return;
+            }
+        }
+        if (continuousGrowY === 0 && (continuousGrow > 0 || continuousGrowPer > 0)) {
+            alert("月投額增長未填寫時間。");
+            return;
+        }
+        if (years2 > 0) {
+            if (IWDA2 === 0 && VOO2 === 0 && QQQM2 === 0) {
+                alert("第二階段未填寫配比。");
+                return;
+            } else if (IWDA2 + VOO2 + QQQM2 != 100) {
+                alert("第二階段配比加起來必須是100%。");
+                return;
+            }
+        }
+        if ((IWDA2 > 0 || VOO2 > 0 || QQQM2 > 0) && years2 === 0) {
+            alert("第二階段未填寫投資年期。");
+            return;
         }
         
-        yreturn[i] = amount[i] - principal[i];
-        maverage[i] = yreturn[i] / 12;
-    }
+        const yearRate = [];
+        yearRate[0] = IWDA_R[mode] * IWDA1/100 + VOO_R[mode] * VOO1/100 + QQQM_R[mode] * QQQM1/100;
+        yearRate[1] = IWDA_R[mode] * IWDA2/100 + VOO_R[mode] * VOO2/100 + QQQM_R[mode] * QQQM2/100;
+        
+        const limitedYearly = [];
+        const amount = [], principal = [], yearly = [], yreturn = [], maverage = [];
 
-    let modeButton = `
-        <button onclick="setMode(0)">保守</button>
-        <button onclick="setMode(1)">一般</button>
-        <button onclick="setMode(2)">進取</button>
-    `;
+        const continuousYearly = [];
 
-    const modeStr = ["保守", "一般", "進取"];
+        // 計算每年限期月定投的總數
+        for (let i = 0; i <= limitedY; i++) {
+            if (i === limitedY && limitedM > 0) { // 計算月份
+                limitedYearly[i] = limited * limitedM;
+            } else {
+                limitedYearly[i] = limited * 12;
+            }
+        }
 
-    let table1 = `
-        ${modeStr[mode]} 年利率 ${yearRate[0]} %<p>
-        <table>
-        <tr>
-            <th></th>
-            <th>總額</th>
-            <th>本金</th>
-            <th>年度投入</th>
-            <th>年回報（月均）</th>
-        </tr>
-    `;
+        for (let i = 0; i < totalYears; i++) {
+            if (i === 0) {
+                continuousYearly[i] = continuous * 12;
+            } else {
+                if (continuousGrowY > 0 && (i+1) % continuousGrowY === 0) { //如果有增長
+                    if (continuousGrow > 0) {
+                        continuousYearly[i] = continuousYearly[i-1] + continuousGrow*12;
+                    } else {
+                        continuousYearly[i] = continuousYearly[i-1] * (1+continuousGrowPer/100);
+                    }
+                } else {
+                    continuousYearly[i] = continuousYearly[i-1];
+                }
+            }
+        }
 
-    for (let i = 0; i < years1; i++) {
-        table1 += `
+        for (let i = 0; i < totalYears; i++) {
+            if (i === years1) {
+                period = 1;
+            }
+            if (i === 0) {
+                yearly[i] = start + limitedYearly[i] + continuousYearly[i];
+                amount[i] = yearly[i] * (1 + yearRate[0]);
+                principal[i] = yearly[i];
+            } else {
+                if (limitedYearly[i] > 0) { // 如果有限期月定投
+                    yearly[i] = limitedYearly[i] + continuousYearly[i];
+                } else {
+                    yearly[i] = continuousYearly[i];
+                }
+                amount[i] = (amount[i-1] + yearly[i]) * (1 + yearRate[period]);
+                principal[i] = principal[i-1] + yearly[i];
+            }
+            
+            yreturn[i] = amount[i] - principal[i];
+            maverage[i] = yreturn[i] / 12;
+        }
+
+        let modeButton = `
+            <button onclick="setMode(0)">保守</button>
+            <button onclick="setMode(1)">一般</button>
+            <button onclick="setMode(2)">進取</button>
+        `;
+
+        const modeStr = ["保守", "一般", "進取"];
+
+        let table1 = `
+            ${modeStr[mode]} 年利率 ${yearRate[0].toFixed(2)} %<p>
+            <table>
             <tr>
-                <td>第${i+1}年</td>
-                <td>$ ${amount[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
-                <td>$ ${principal[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
-                <td>$ ${yearly[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
-                <td>$ ${yreturn[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}（$ ${maverage[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}）</td>
+                <th></th>
+                <th>總額</th>
+                <th>本金</th>
+                <th>年度投入</th>
+                <th>年回報<a style="color:grey;">（月均）</a></th>
             </tr>
         `;
+
+        const graph1 = document.getElementById("graph1");
+
+        const g1 = graph1.getContext("2d");
+        g1.fillStyle = 'white';
+        g1.fillRect(0, 0, graph1.width, graph1.height);
+        g1.fillStyle="grey";
+        g1.fillRect(200,20,5,5);
+        g1.fillStyle="grey";
+        g1.font = "8px Arial";
+        g1.fillText("總額", 210, 26);
+
+        g1.fillStyle="black";
+        g1.fillRect(200,35,5,5);
+        g1.fillStyle="black";
+        g1.font = "8px Arial";
+        g1.fillText("本金", 210, 41);
+
+        for (let i = 0; i < years1; i++) {
+            table1 += `
+                <tr>
+                    <td>第${i+1}年</td>
+                    <td>$ ${amount[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
+                    <td>$ ${principal[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
+                    <td>$ ${yearly[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
+                    <td>$ ${yreturn[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}<a style="color:grey;">（$ ${maverage[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}）</a></td>
+                </tr>
+            `;
+            g1.beginPath();
+            g1.moveTo(0, i*11+30);
+            g1.lineTo(graph1.width*(amount[i]/amount[totalYears-1]), i*11+30)
+            g1.strokeStyle = "grey";
+            g1.lineWidth = 3;
+            g1.stroke();
+            g1.beginPath();
+            g1.moveTo(0, i*11+30);
+            g1.lineTo(graph1.width*(amount[i]/amount[totalYears-1])*(principal[i]/amount[i]), i*11+30)
+            g1.strokeStyle = "black";
+            g1.lineWidth = 3;
+            g1.stroke();
+        }
+        
+        table1 += `</table>`;
+        
+
+        let table2 = "";
+
+        const graph2 = document.getElementById("graph2");
+        const g2 = graph2.getContext("2d");
+
+        if (years2 > 0) { //如果有第二階段
+            g2.fillStyle = 'white';
+            g2.fillRect(0, 0, graph2.width, graph2.height);
+            table2 = `
+                ${modeStr[mode]} 年利率 ${yearRate[1].toFixed(2)} %<p>
+                <table>
+                <tr>
+                    <th></th>
+                    <th>總額</th>
+                    <th>本金</th>
+                    <th>年度投入</th>
+                    <th>年回報<a style="color:grey;">（月均）</a></th>
+                </tr>
+            `;
+            for (let i = 0; i < years2; i++) {
+                table2 += `
+                    <tr>
+                        <td>第${i+1+years1}年</td>
+                        <td>$ ${amount[i+years1].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
+                        <td>$ ${principal[i+years1].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
+                        <td>$ ${yearly[i+years1].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
+                        <td>$ ${yreturn[i+years1].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}<a style="color:grey;">（$ ${maverage[i+years1].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}）</a></td>
+                    </tr>
+                `;
+                g2.beginPath();
+                g2.moveTo(0, i*11+30);
+                g2.lineTo(graph1.width*(amount[i+years1]/amount[totalYears-1]), i*11+30)
+                g2.strokeStyle = "grey";
+                g2.lineWidth = 3;
+                g2.stroke();
+                g2.beginPath();
+                g2.moveTo(0, i*11+30);
+                g2.lineTo(graph1.width*(amount[i+years1]/amount[totalYears-1])*(principal[i+years1]/amount[i+years1]), i*11+30)
+                g2.strokeStyle = "black";
+                g2.lineWidth = 3;
+                g2.stroke();
+            }
+            table2 += `</table>`;
+        }
+
+        let cap = "<button onclick='capture()'>儲存圖片</button>";
+
+        document.getElementById("modeButton").innerHTML = modeButton
+        document.getElementById("table1").innerHTML = table1;
+        document.getElementById("table2").innerHTML = table2;
+        document.getElementById("cap").innerHTML = cap;
     }
 
-    table1 += `</table>`;
+    function setMode(newMode) {
+        // 在 calculate() 函數中已經宣告了 mode 變數，所以這裡直接修改全域變數
+        mode = newMode;
+        calculate(); // 重新計算並更新表格
+    }
 
-    document.getElementById("modeButton").innerHTML = modeButton
-    document.getElementById("table1").innerHTML = table1;
-}
-
-function setMode(newMode) {
-    // 在 calculate() 函數中已經宣告了 mode 變數，所以這裡直接修改全域變數
-    mode = newMode;
-    calculate(); // 重新計算並更新表格
-}
+    function capture() {
+        const container = document.getElementById('container');
+        // 確保 container 高度包含所有內容
+        container.style.height = `${container.scrollHeight}px`;
+        html2canvas(container).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'IndexFund.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    }
   </script>
 </html>
