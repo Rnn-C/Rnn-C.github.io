@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+  <html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>指數基金計算</title>
+  </head>
+  <style>
+      .container {
+        max-width: 1440px;
+        margin: 24px auto;
+        padding: 24px;
+      }
+      .column {
+        float: left;
+        width: 50%;
+      }
+      .row:after {
+        content: "";
+        display: table;
+        clear: both;
+      }
+  </style>
+  <body>
+    <div class="container">
+      <h1>指數基金計算</h1>
+      <div>
+        <label for="start">初始投資</label><br>
+        $ <input type="number" id="start" min="0" step="100"><p>
+
+        <label for="limited">限期月定投</label><br>
+        $ <input type="number" id="limited" min="0" step="100">&nbsp
+        <input type="number" id="limitedY" min="0" max="60"><label for="limitedY"> 年 </label>
+        <input type="number" id="limitedM" min="0" max="11"><label for="limitedM"> 個月</label>
+        <ul>
+            <li>
+                每 <input type="number" id="limitedGrowY" min="0" max="60"><label for="limitedGrowY"> 年 </label>，增加 <!-- max要小於限期 -->
+                <label for="limitedGrow"> $ </label><input type="number" id="limitedGrow" min="0"> / 
+                <input type="number" id="limitedGrowPer" min="0" max="1000"><label for="limitedGrowPer"> %</label>
+            </li>
+        </ul><p>
+
+        <label for="continuous">持續月定投</label><br>
+        $ <input type="number" id="continuous" min="0" step="100">
+        <ul>
+            <li>
+                每 <input type="number" id="continuousGrowY" min="0" max="60"><label for="continuousGrowY"> 年</label>，增加 <!-- max要小於兩個投資年期相加 -->
+                <label for="continuousGrow"> $ </label><input type="number" id="continuousGrow" min="0"> / 
+                <input type="number" id="continuousGrowPer" min="0" max="1000"><label for="continuousGrowPer"> %</label>
+            </li>
+        </ul><p>
+
+        <div class="column">
+            <h4>第一階段</h4>
+                <label for="years1">投資年期：</label>
+                <input type="number" id="years1" min="1" max="60"><p>
+                配比<p>
+                <label for="IWDA1">IWDA </label><input type="number" id="IWDA1" min="0" max="100"> %<p>
+                <label for="VOO1">VOO </label><input type="number" id="VOO1" min="0" max="100"> %<p>
+                <label for="QQQM1">QQQM </label><input type="number" id="QQQM1" min="0" max="100"> %<p>
+        </div>
+
+        <div class="column">
+            <h4>第二階段</h4>
+                 <label for="years2">投資年期：</label>
+                <input type="number" id="years2" min="1" max="60"><p>
+                配比<p>
+                <label for="IWDA2">IWDA </label><input type="number" id="IWDA2" min="0" max="100"> %<p>
+                <label for="VOO2">VOO </label><input type="number" id="VOO2" min="0" max="100"> %<p>
+                <label for="QQQM2">QQQM </label><input type="number" id="QQQM2" min="0" max="100"> %<p>
+        </div>
+
+        <button onclick="calculate()">計算</button><p><p>
+        <p><div id="modeButton"></div></p>
+        <div class="column" id="table1"></div>
+        <div class="column" id="graph"></div>
+        <div id="cap"></div>
+      </div>
+    </div>
+  </body>
+  <script>
+    function numberWithCommas(x) {
+        return x.toLocaleString('zh-Hant', {maximumFractionDigits: 0});
+    }
+    function calculate() {
+    const IWDA_R = [0.8, 0.09, 0.11], VOO_R = [0.1, 0.12, 0.15], QQQM_R = [0.1, 0.15, 0.17];
+
+    let mode = 1;
+
+    const fields = [
+        'start', 'limited', 'limitedY', 'limitedM', 'limitedGrowY', 
+        'limitedGrow', 'limitedGrowPer', 'continuous', 'continuousGrowY', 
+        'continuousGrow', 'continuousGrowPer', 'years1', 'IWDA1', 
+        'VOO1', 'QQQM1', 'years2', 'IWDA2', 'VOO2', 'QQQM2'
+    ];
+
+    fields.forEach(field => {
+        const element = document.getElementById(field);
+        element.value = parseFloat(localStorage.getItem(`${field}_`)) || '';
+    
+        element.addEventListener('input', () => {
+            localStorage.setItem(`${field}_`, element.value);
+        });
+    });
+
+    // 確保所有數值都正確轉換
+    const start = parseFloat(document.getElementById('start').value) || 0;
+    const limited = parseFloat(document.getElementById('limited').value) || 0;
+    const limitedY = parseFloat(document.getElementById('limitedY').value) || 0;
+    const limitedM = parseFloat(document.getElementById('limitedM').value) || 0;
+    const continuous = parseFloat(document.getElementById('continuous').value) || 0;
+    const years1 = parseFloat(document.getElementById('years1').value) || 0;
+    const years2 = parseFloat(document.getElementById('years2').value) || 0;
+    const IWDA1 = parseFloat(document.getElementById('IWDA1').value) || 0;
+    const VOO1 = parseFloat(document.getElementById('VOO1').value) || 0;
+    const QQQM1 = parseFloat(document.getElementById('QQQM1').value) || 0;
+    const IWDA2 = parseFloat(document.getElementById('IWDA2').value) || 0;
+    const VOO2 = parseFloat(document.getElementById('VOO2').value) || 0;
+    const QQQM2 = parseFloat(document.getElementById('QQQM2').value) || 0;
+
+    if (years1 <= 0 && (limited <= 0 || continuous <= 0) && (IWDA1 <= 0 || VOO1 <= 0 || QQQM1 <= 0)) {
+        alert("「投資年期」、「限期月定投」或「持續月定投」、「配比」必須填寫");
+        return;
+    } else if (IWDA1 + VOO1 + QQQM1 != 100) {
+        alert("配比加起來必須是100%");
+        return;
+    }
+
+    let totalYears = years1 + years2;
+    let period = 0;
+    
+    const yearRate = [];
+    yearRate[0] = IWDA_R[mode] * IWDA1/100 + VOO_R[mode] * VOO1/100 + QQQM_R[mode] * QQQM1/100;
+    yearRate[1] = IWDA_R[mode] * IWDA2/100 + VOO_R[mode] * VOO2/100 + QQQM_R[mode] * QQQM2/100;
+    
+    const limitedYearly = [];
+    const amount = [], principal = [], yearly = [], yreturn = [], maverage = [];
+
+    // 計算每年限期月定投的總數
+    for (let i = 0; i <= limitedY; i++) {
+        if (i === limitedY && limitedM > 0) {
+            limitedYearly.push(limited * limitedM);
+        } else {
+            limitedYearly.push(limited * 12);
+        }
+    }
+    
+    for (let i = 0; i < totalYears; i++) {
+        if (i === years1) {
+            period = 1;
+        }
+        if (i === 0) {
+            yearly[i] = start + limitedYearly[i] + continuous * 12;
+            amount[i] = yearly[i] * (1 + yearRate[0]);
+            principal[i] = yearly[i];
+        } else {
+            if (limitedYearly[i] == true) {
+              yearly[i] = limitedYearly[i] + continuous * 12;
+            } else {
+              yearly[i] = continuous * 12;
+            }
+            amount[i] = (amount[i-1] + yearly[i]) * (1 + yearRate[period]);
+            principal[i] = principal[i-1] + yearly[i];
+        }
+        
+        yreturn[i] = amount[i] - principal[i];
+        maverage[i] = yreturn[i] / 12;
+    }
+
+    let modeButton = `
+        <button onclick="setMode(0)">保守</button>
+        <button onclick="setMode(1)">一般</button>
+        <button onclick="setMode(2)">進取</button>
+    `;
+
+    const modeStr = ["保守", "一般", "進取"];
+
+    let table1 = `
+        ${modeStr[mode]} 年利率 ${yearRate[0]} %<p>
+        <table>
+        <tr>
+            <th></th>
+            <th>總額</th>
+            <th>本金</th>
+            <th>年度投入</th>
+            <th>年回報（月均）</th>
+        </tr>
+    `;
+
+    for (let i = 0; i < years1; i++) {
+        table1 += `
+            <tr>
+                <td>第${i+1}年</td>
+                <td>$ ${amount[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
+                <td>$ ${principal[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
+                <td>$ ${yearly[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
+                <td>$ ${yreturn[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}（$ ${maverage[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}）</td>
+            </tr>
+        `;
+    }
+
+    table1 += `</table>`;
+
+    document.getElementById("modeButton").innerHTML = modeButton
+    document.getElementById("table1").innerHTML = table1;
+}
+
+function setMode(newMode) {
+    // 在 calculate() 函數中已經宣告了 mode 變數，所以這裡直接修改全域變數
+    mode = newMode;
+    calculate(); // 重新計算並更新表格
+}
+  </script>
+</html>
