@@ -24,14 +24,30 @@
       table {
         width: 100%;
      }
-     th {
+     th, td {
         text-align: left;
+     }
+     label {
+        cursor: pointer;
+     }
+     input{
+        margin: 5px 2px;
+        padding: 3px 5px;
+        border: none;
+        /* border-bottom: 1px solid darkgrey; */
+        background-color: rgb(247, 247, 247);
+     }
+     button {
+        cursor: pointer;
      }
   </style>
   <body>
     <div class="container" id="container">
-      <h1>指數基金計算</h1>
+      <h1 style="color: grey;text-align: center;">指數基金計算</h1>
       <div>
+        <form id="frm">
+        <h2>資金投入</h2>
+        <a style="color:rgb(175, 175, 175);">*至少填任一項*</a><p>
         <label for="start">初始投資</label><br>
         $ <input type="number" id="start" min="0" step="100"><p>
 
@@ -49,16 +65,17 @@
                 <label for="continuousGrow"> $ </label><input type="number" id="continuousGrow" min="0"> 或 
                 <input type="number" id="continuousGrowPer" min="0" max="1000"><label for="continuousGrowPer"> %</label>
             </li>
-        </ul><p>
-
+        </ul><p><br>
+        <h2>期間與基金配比</h2>
+        <a style="color:rgb(175, 175, 175);">*沒有特別需求可以無視第二階段，配比IWDA直接填100*</a><br>
         <div class="column">
             <h4>第一階段</h4>
                 <label for="years1">投資年期：</label>
                 <input type="number" id="years1" min="1" max="60"><p>
                 配比<p>
-                <label for="IWDA1">IWDA </label><input type="number" id="IWDA1" min="0" max="100"> %<p>
-                <label for="VOO1">VOO </label><input type="number" id="VOO1" min="0" max="100"> %<p>
-                <label for="QQQM1">QQQM </label><input type="number" id="QQQM1" min="0" max="100"> %<p>
+                <label for="IWDA1">IWDA </label><input type="number" id="IWDA1" min="0" max="100" step="10"> %<p>
+                <label for="VOO1">VOO </label><input type="number" id="VOO1" min="0" max="100" step="10"> %<p>
+                <label for="QQQM1">QQQM </label><input type="number" id="QQQM1" min="0" max="100" step="10"> %<p>
         </div>
 
         <div class="column">
@@ -66,20 +83,27 @@
                  <label for="years2">投資年期：</label>
                 <input type="number" id="years2" min="1" max="60"><p>
                 配比<p>
-                <label for="IWDA2">IWDA </label><input type="number" id="IWDA2" min="0" max="100"> %<p>
-                <label for="VOO2">VOO </label><input type="number" id="VOO2" min="0" max="100"> %<p>
-                <label for="QQQM2">QQQM </label><input type="number" id="QQQM2" min="0" max="100"> %<p>
+                <label for="IWDA2">IWDA </label><input type="number" id="IWDA2" min="0" max="100" step="10"> %<p>
+                <label for="VOO2">VOO </label><input type="number" id="VOO2" min="0" max="100" step="10"> %<p>
+                <label for="QQQM2">QQQM </label><input type="number" id="QQQM2" min="0" max="100" step="10"> %<p>
+        </div>
+        </form>
+        <div style="padding:20px 0px;">
+            <button onclick="calculate()" style="padding: 12px 200px;font-size: 16px;">計算</button>
+            <button onclick="clean()" style="padding: 12px 50px;font-size: 16px;float:right;">清除</button><p></p>
         </div>
 
-        <button onclick="calculate()">計算</button><p><p>
-
         <p><div id="modeButton"></div></p>
-
-        <div class="column" id="table1"></div>
-        <canvas class="column" id="graph1"></canvas>
-
-        <div class="column" id="table2"></div>
-        <canvas class="column" id="graph2"></canvas><p>
+        
+        <div>
+            <div class="column" id="table1"></div>
+            <canvas class="column" id="graph1"></canvas>
+        </div><p>
+        
+        <div>
+            <div class="column" id="table2"></div>
+            <canvas class="column" id="graph2"></canvas>
+        </div><p>
 
         <div id="cap"></div>
       </div>
@@ -187,15 +211,17 @@
 
         const continuousYearly = [];
 
-        // 計算每年限期月定投的總數
+        // 計算每年限期月定投
         for (let i = 0; i <= limitedY; i++) {
             if (i === limitedY && limitedM > 0) { // 計算月份
                 limitedYearly[i] = limited * limitedM;
             } else if (i < limitedY) {
                 limitedYearly[i] = limited * 12;
+                // limitedYearly[i] = parseFloat(limitedYearly[i]);
             }
         }
 
+        // 計算每年持續月定投
         for (let i = 0; i < totalYears; i++) {
             if (i === 0) {
                 continuousYearly[i] = continuous * 12;
@@ -217,7 +243,12 @@
                 period = 1;
             }
             if (i === 0) {
-                yearly[i] = start + limitedYearly[i] + continuousYearly[i];
+                if (limitedYearly[i] > 0) { // 如果有限期月定投
+                    yearly[i] = start + limitedYearly[i] + continuousYearly[i];
+                } else {
+                    yearly[i] = start + continuousYearly[i];
+                }
+                // yearly[i] = start + limitedYearly[i] + continuousYearly[i];
                 amount[i] = yearly[i] * (1 + yearRate[0]);
                 principal[i] = yearly[i];
             } else {
@@ -235,15 +266,15 @@
         }
 
         let modeButton = `
-            <button onclick="setMode(0)">保守</button>
-            <button onclick="setMode(1)">一般</button>
-            <button onclick="setMode(2)">進取</button>
+            <button onclick="setMode(0)" style="border: none;padding: 8px 90px;font-size: 12;">保守</button>
+            <button onclick="setMode(1)" style="border: none;padding: 8px 90px;font-size: 12;">一般</button>
+            <button onclick="setMode(2)" style="border: none;padding: 8px 90px;font-size: 12;">進取</button>
         `;
 
         const modeStr = ["保守", "一般", "進取"];
 
         let table1 = `
-            ${modeStr[mode]} 年利率 ${yearRate[0].toFixed(2)} %<p>
+            ${modeStr[mode]} 年利率 ${yearRate[0].toFixed(2)*100} %<p>
             <table>
             <tr>
                 <th></th>
@@ -255,6 +286,7 @@
         `;
 
         const graph1 = document.getElementById("graph1");
+        graph1.height = years1 * 15;
 
         const g1 = graph1.getContext("2d");
         g1.fillStyle = 'white';
@@ -282,14 +314,14 @@
                 </tr>
             `;
             g1.beginPath();
-            g1.moveTo(0, i*11+30);
-            g1.lineTo(graph1.width*(amount[i]/amount[totalYears-1]), i*11+30)
+            g1.moveTo(0, i*10.515+30);
+            g1.lineTo(graph1.width*(amount[i]/amount[totalYears-1]), i*10.515+30)
             g1.strokeStyle = "grey";
             g1.lineWidth = 3;
             g1.stroke();
             g1.beginPath();
-            g1.moveTo(0, i*11+30);
-            g1.lineTo(graph1.width*(amount[i]/amount[totalYears-1])*(principal[i]/amount[i]), i*11+30)
+            g1.moveTo(0, i*10.515+30);
+            g1.lineTo(graph1.width*(amount[i]/amount[totalYears-1])*(principal[i]/amount[i]), i*10.515+30)
             g1.strokeStyle = "black";
             g1.lineWidth = 3;
             g1.stroke();
@@ -301,13 +333,14 @@
         let table2 = "";
 
         const graph2 = document.getElementById("graph2");
+        graph2.height = years2 * 14;
         const g2 = graph2.getContext("2d");
 
         if (years2 > 0) { //如果有第二階段
             g2.fillStyle = 'white';
             g2.fillRect(0, 0, graph2.width, graph2.height);
             table2 = `
-                ${modeStr[mode]} 年利率 ${yearRate[1].toFixed(2)} %<p>
+                ${modeStr[mode]} 年利率 ${yearRate[1].toFixed(2)*100} %<p>
                 <table>
                 <tr>
                     <th></th>
@@ -328,14 +361,14 @@
                     </tr>
                 `;
                 g2.beginPath();
-                g2.moveTo(0, i*11+30);
-                g2.lineTo(graph1.width*(amount[i+years1]/amount[totalYears-1]), i*11+30)
+                g2.moveTo(0, i*10.515+30);
+                g2.lineTo(graph1.width*(amount[i+years1]/amount[totalYears-1]), i*10.515+30)
                 g2.strokeStyle = "grey";
                 g2.lineWidth = 3;
                 g2.stroke();
                 g2.beginPath();
-                g2.moveTo(0, i*11+30);
-                g2.lineTo(graph1.width*(amount[i+years1]/amount[totalYears-1])*(principal[i+years1]/amount[i+years1]), i*11+30)
+                g2.moveTo(0, i*10.515+30);
+                g2.lineTo(graph1.width*(amount[i+years1]/amount[totalYears-1])*(principal[i+years1]/amount[i+years1]), i*10.515+30)
                 g2.strokeStyle = "black";
                 g2.lineWidth = 3;
                 g2.stroke();
@@ -343,7 +376,7 @@
             table2 += `</table>`;
         }
 
-        let cap = "<button onclick='capture()'>儲存圖片</button>";
+        let cap = "<button onclick='capture()' style='padding:6px 20px;'>儲存圖片</button>";
 
         document.getElementById("modeButton").innerHTML = modeButton
         document.getElementById("table1").innerHTML = table1;
@@ -367,6 +400,10 @@
             link.href = canvas.toDataURL('image/png');
             link.click();
         });
+    }
+
+    function clean() {
+        document.getElementById("frm").reset();
     }
   </script>
 </html>
