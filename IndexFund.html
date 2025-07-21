@@ -70,8 +70,11 @@
                 <label for="QQQM2">QQQM </label><input type="number" id="QQQM2" min="0" max="100"> %<p>
         </div>
 
-        <button onclick="calculate()">計算</button><p>
-        <div id="result"></div>
+        <button onclick="calculate()">計算</button><p><p>
+        <p><div id="modeButton"></div></p>
+        <div class="column" id="table1"></div>
+        <div class="column" id="graph"></div>
+        <div id="cap"></div>
       </div>
     </div>
   </body>
@@ -114,6 +117,14 @@
     const IWDA2 = parseFloat(document.getElementById('IWDA2').value) || 0;
     const VOO2 = parseFloat(document.getElementById('VOO2').value) || 0;
     const QQQM2 = parseFloat(document.getElementById('QQQM2').value) || 0;
+
+    if (years1 <= 0 && (limited <= 0 || continuous <= 0) && (IWDA1 <= 0 || VOO1 <= 0 || QQQM1 <= 0)) {
+        alert("「投資年期」、「限期月定投」或「持續月定投」、「配比」必須填寫");
+        return;
+    } else if (IWDA1 + VOO1 + QQQM1 != 100) {
+        alert("配比加起來必須是100%");
+        return;
+    }
 
     let totalYears = years1 + years2;
     let period = 0;
@@ -159,10 +170,13 @@
     let modeButton = `
         <button onclick="setMode(0)">保守</button>
         <button onclick="setMode(1)">一般</button>
-        <button onclick="setMode(2)">進取</button><p>
+        <button onclick="setMode(2)">進取</button>
     `;
 
-    let table = `
+    const modeStr = ["保守", "一般", "進取"];
+
+    let table1 = `
+        ${modeStr[mode]} 年利率 ${yearRate[0]} %<p>
         <table>
         <tr>
             <th></th>
@@ -173,8 +187,8 @@
         </tr>
     `;
 
-    for (let i = 0; i < totalYears; i++) {
-        table += `
+    for (let i = 0; i < years1; i++) {
+        table1 += `
             <tr>
                 <td>第${i+1}年</td>
                 <td>$ ${amount[i].toLocaleString('zh-Hant', {maximumFractionDigits: 0})}</td>
@@ -185,18 +199,16 @@
         `;
     }
 
-    table += `</table>`;
+    table1 += `</table>`;
 
-    let resultStr;        
+    document.getElementById("modeButton").innerHTML = modeButton
+    document.getElementById("table1").innerHTML = table1;
+}
 
-    if (years1 > 0 && (limited > 0 || continuous > 0) && (IWDA1 > 0 || VOO1 > 0 || QQQM1 >0)) {
-        resultStr = modeButton + table;
-    } else {
-        alert("「投資年期」、「限期月定投」或「持續月定投」、「配比」必須填寫");
-        return;
-    }
-
-    document.getElementById("result").innerHTML = resultStr;
+function setMode(newMode) {
+    // 在 calculate() 函數中已經宣告了 mode 變數，所以這裡直接修改全域變數
+    mode = newMode;
+    calculate(); // 重新計算並更新表格
 }
   </script>
 </html>
