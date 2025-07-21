@@ -130,8 +130,8 @@
 
         let totalYears = years1 + years2;
         let period = 0;
-
-        if (years1 === 0 && (limited === 0 || continuous === 0) && (IWDA1 === 0 || VOO1 === 0 || QQQM1 === 0)) {
+        
+        if (years1 === 0 && (limited === 0 && continuous === 0) && (IWDA1 === 0 && VOO1 === 0 && QQQM1 === 0)) {
             alert("「投資年期」、「限期月定投」或「持續月定投」、「配比」必須填寫。");
             return;
         } else if (IWDA1 + VOO1 + QQQM1 != 100) {
@@ -191,7 +191,7 @@
         for (let i = 0; i <= limitedY; i++) {
             if (i === limitedY && limitedM > 0) { // 計算月份
                 limitedYearly[i] = limited * limitedM;
-            } else {
+            } else if (i < limitedY) {
                 limitedYearly[i] = limited * 12;
             }
         }
