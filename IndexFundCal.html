@@ -91,8 +91,9 @@
         </div>
         </form>
         <div style="padding:20px 0px;">
+            <a style="color: rgb(175, 175, 175);">*輸入後太快按「計算」可能會導致出現錯誤警告，重新填寫後再計算即可。</a><p>
             <button onclick="calculate()" style="padding: 12px 200px;font-size: 16px;">計算</button>
-            <button onclick="clean()" style="padding: 12px 50px;font-size: 16px;float:right;">清除</button><p></p>
+            <button onclick="clean()" style="padding: 12px 50px;font-size: 16px;float:right;">重設</button><p></p>
         </div>
 
         <p><div id="modeButton"></div></p>
@@ -119,6 +120,9 @@
     let mode = 1;
 
     function calculate() {
+        // 添加一個小延遲，確保輸入事件已經完成
+        setTimeout(() => {
+            
         const IWDA_R = [0.08, 0.09, 0.11], VOO_R = [0.1, 0.12, 0.15], QQQM_R = [0.1, 0.15, 0.17];
 
         const fields = [
@@ -156,58 +160,6 @@
 
         let totalYears = years1 + years2;
         let period = 0;
-        
-        if (years1 === 0 && (limited === 0 && continuous === 0) && (IWDA1 === 0 && VOO1 === 0 && QQQM1 === 0)) {
-            alert("「投資年期」、「限期月定投」或「持續月定投」、「配比」必須填寫。");
-            return;
-        } else if (IWDA1 + VOO1 + QQQM1 != 100) {
-            alert("配比加起來必須是100%。");
-            return;
-        }
-        if (limited > 0) {
-            if ((limitedY === 0 && limitedM === 0)) {
-                alert("限期月定投必須填寫期限。");
-                return;
-            } else if (limitedY > totalYears || (limitedY === totalYears && limitedM > 0)) {
-                alert("限期月定投期限不能大於全投資年期。");
-                return;
-            }
-        }
-        if ((limitedY > 0 || limitedM > 0) && limited === 0) {
-            alert("限期月定投尚未填寫金額。");
-            return;
-        }
-        if (continuousGrowY > 0) {
-            if (continuousGrow > 0 && continuousGrowPer > 0) {
-                alert("月投額增長只能填寫金額或者百分比。");
-                return;
-            } else if (continuousGrow === 0 && continuousGrowPer === 0) {
-                alert("月投額增長必須填寫填金額或者百分比。");
-                return;
-            }
-        }
-        if (continuousGrow > 0 || continuousGrowPer > 0) {
-            if (continuousGrowY === 0) {
-                alert("月投額增長未填寫時間。");
-                return;
-            } else if (continuousGrowY > totalYears) {
-                alert("月投額增長頻率大於總投資年期。");
-                return;
-            }
-        }
-        if (years2 > 0) {
-            if (IWDA2 === 0 && VOO2 === 0 && QQQM2 === 0) {
-                alert("第二階段未填寫配比。");
-                return;
-            } else if (IWDA2 + VOO2 + QQQM2 != 100) {
-                alert("第二階段配比加起來必須是100%。");
-                return;
-            }
-        }
-        if ((IWDA2 > 0 || VOO2 > 0 || QQQM2 > 0) && years2 === 0) {
-            alert("第二階段未填寫投資年期。");
-            return;
-        }
         
         const yearRate = [];
         yearRate[0] = IWDA_R[mode] * IWDA1/100 + VOO_R[mode] * VOO1/100 + QQQM_R[mode] * QQQM1/100;
@@ -272,6 +224,58 @@
             maverage[i] = yreturn[i] / 12;
         }
 
+        if (years1 === 0 && (limited === 0 && continuous === 0) && (IWDA1 === 0 && VOO1 === 0 && QQQM1 === 0)) {
+            alert("「投資年期」、「限期月定投」或「持續月定投」、「配比」必須填寫。");
+            return;
+        } else if (IWDA1 + VOO1 + QQQM1 != 100) {
+            alert("「配比」加起來必須是100%。");
+            return;
+        }
+        if (limited > 0) {
+            if ((limitedY === 0 && limitedM === 0)) {
+                alert("「限期月定投必須填寫「期限」。");
+                return;
+            } else if (limitedY > totalYears || (limitedY === totalYears && limitedM > 0)) {
+                alert("「限期月定投期限不能大於「全投資年期」。");
+                return;
+            }
+        }
+        if ((limitedY > 0 || limitedM > 0) && limited === 0) {
+            alert("「限期月定投」尚未填寫「金額」。");
+            return;
+        }
+        if (continuousGrowY > 0) {
+            if (continuousGrow > 0 && continuousGrowPer > 0) {
+                alert("「月投額增長」只能填寫「金額」或者「百分比」。");
+                return;
+            } else if (continuousGrow === 0 && continuousGrowPer === 0) {
+                alert("「月投額增長」必須填寫填「金額」或者「百分比」。");
+                return;
+            }
+        }
+        if (continuousGrow > 0 || continuousGrowPer > 0) {
+            if (continuousGrowY === 0) {
+                alert("「月投額增長」未填寫「頻率」。");
+                return;
+            } else if (continuousGrowY > totalYears) {
+                alert("「月投額增長頻率」大於「總投資年期」。");
+                return;
+            }
+        }
+        if (years2 > 0) {
+            if (IWDA2 === 0 && VOO2 === 0 && QQQM2 === 0) {
+                alert("「第二階段」未填寫「配比」。");
+                return;
+            } else if (IWDA2 + VOO2 + QQQM2 != 100) {
+                alert("「第二階段」「配比」加起來必須是100%。");
+                return;
+            }
+        }
+        if ((IWDA2 > 0 || VOO2 > 0 || QQQM2 > 0) && years2 === 0) {
+            alert("「第二階段」未填寫「投資年期」。");
+            return;
+        }
+
         let modeButton = `
             <button onclick="setMode(0)" style="border: none;padding: 8px 90px;font-size: 12;">保守</button>
             <button onclick="setMode(1)" style="border: none;padding: 8px 90px;font-size: 12;">一般</button>
@@ -293,7 +297,7 @@
         `;
 
         const graph1 = document.getElementById("graph1");
-        graph1.height = years1 * 15;
+        graph1.height = years1 * 13 + 40;
 
         const g1 = graph1.getContext("2d");
         g1.fillStyle = 'white';
@@ -340,7 +344,7 @@
         let table2 = "";
 
         const graph2 = document.getElementById("graph2");
-        graph2.height = years2 * 14;
+        graph2.height = years2 * 13 + 30;
         const g2 = graph2.getContext("2d");
 
         if (years2 > 0) { //如果有第二階段
@@ -389,6 +393,7 @@
         document.getElementById("table1").innerHTML = table1;
         document.getElementById("table2").innerHTML = table2;
         document.getElementById("cap").innerHTML = cap;
+        }, 100); // 100毫秒的延遲
     }
 
     function setMode(newMode) {
@@ -420,8 +425,16 @@
 
         // 清除每個欄位的 localStorage
         fields.forEach(field => {
-            localStorage.removeItem(`${field}_`);
+            if (field === "IWDA1") {
+                document.getElementById(field).value = 100;
+                localStorage.setItem(`${field}_`, '100');
+            } else {
+                localStorage.removeItem(`${field}_`);
+            }
         });
+
+        document.getElementById(field).value = 100;
+        localStorage.setItem(`${field}_`, '100');
 
         // 清除結果區域
         document.getElementById("modeButton").innerHTML = '';
