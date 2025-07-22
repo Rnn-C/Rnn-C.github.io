@@ -60,10 +60,10 @@
         <label for="continuous">持續月定投</label><br>
         $ <input type="number" id="continuous" min="0" step="100">
         <ul>
-            <li>
-                每 <input type="number" id="continuousGrowY" min="0" max="60"><label for="continuousGrowY"> 年</label>，月投額增加 <!-- max要小於兩個投資年期相加 -->
-                <label for="continuousGrow"> $ </label><input type="number" id="continuousGrow" min="0"> 或 
-                <input type="number" id="continuousGrowPer" min="0" max="1000"><label for="continuousGrowPer"> %</label>
+            <li style="color: grey;">
+                如果會定期增加，每 <input type="number" id="continuousGrowY" style="color: grey;" min="0" max="60"><label for="continuousGrowY"> 年</label>，月投額增加
+                <label for="continuousGrow"> $ </label><input type="number" id="continuousGrow" style="color: grey;" min="0"> 或 
+                <input type="number" id="continuousGrowPer" style="color: grey;" min="0" max="1000"><label for="continuousGrowPer"> %</label>
             </li>
         </ul><p><br>
         <h2>期間與基金配比</h2>
@@ -73,7 +73,9 @@
                 <label for="years1">投資年期：</label>
                 <input type="number" id="years1" min="1" max="60"><p>
                 配比<p>
-                <label for="IWDA1">IWDA </label><input type="number" id="IWDA1" min="0" max="100" step="10"> %<p>
+                <label for="IWDA1">IWDA </label><input type="number" id="IWDA1" value="100" min="0" max="100" step="10"> %
+                <!-- <button type="button" onclick="fillPercentage('IWDA1', 100)">100%</button> -->
+                <p>
                 <label for="VOO1">VOO </label><input type="number" id="VOO1" min="0" max="100" step="10"> %<p>
                 <label for="QQQM1">QQQM </label><input type="number" id="QQQM1" min="0" max="100" step="10"> %<p>
         </div>
@@ -184,9 +186,14 @@
                 return;
             }
         }
-        if (continuousGrowY === 0 && (continuousGrow > 0 || continuousGrowPer > 0)) {
-            alert("月投額增長未填寫時間。");
-            return;
+        if (continuousGrow > 0 || continuousGrowPer > 0) {
+            if (continuousGrowY === 0) {
+                alert("月投額增長未填寫時間。");
+                return;
+            } else if (continuousGrowY > totalYears) {
+                alert("月投額增長頻率大於總投資年期。");
+                return;
+            }
         }
         if (years2 > 0) {
             if (IWDA2 === 0 && VOO2 === 0 && QQQM2 === 0) {
@@ -404,6 +411,88 @@
 
     function clean() {
         document.getElementById("frm").reset();
+
+        const fields = [
+        'start', 'limited', 'limitedY', 'limitedM', 'continuous', 'continuousGrowY', 
+        'continuousGrow', 'continuousGrowPer', 'years1', 'IWDA1', 
+        'VOO1', 'QQQM1', 'years2', 'IWDA2', 'VOO2', 'QQQM2'
+        ];
+
+        // 清除每個欄位的 localStorage
+        fields.forEach(field => {
+            localStorage.removeItem(`${field}_`);
+        });
+
+        // 清除結果區域
+        document.getElementById("modeButton").innerHTML = '';
+        document.getElementById("table1").innerHTML = '';
+        document.getElementById("table2").innerHTML = '';
+        document.getElementById("cap").innerHTML = '';
+
+        // 清除畫布
+        const graph1 = document.getElementById("graph1");
+        const graph2 = document.getElementById("graph2");
+        const g1 = graph1.getContext("2d");
+        const g2 = graph2.getContext("2d");
+        
+        g1.clearRect(0, 0, graph1.width, graph1.height);
+        g2.clearRect(0, 0, graph2.width, graph2.height);
     }
+
+    function fillPercentage(inputId, percentage) {
+    const inputElement = document.getElementById(inputId);
+    
+    // 設置輸入框的值
+    inputElement.value = percentage;
+    
+    // 觸發 input 事件，這樣會自動更新 localStorage
+    inputElement.dispatchEvent(new Event('input'));
+    
+    // 如果是配比欄位，可能需要調整其他配比
+    if (inputId.startsWith('IWDA') || inputId.startsWith('VOO') || inputId.startsWith('QQQM')) {
+        autoAdjustPercentage(inputId, percentage);
+    }
+}
+
+function autoAdjustPercentage(changedInputId, percentage) {
+    // 提取階段數字（1 或 2）
+    const stage = changedInputId.slice(-1);
+    
+    // 找到同階段的其他配比輸入框
+    const otherInputIds = {
+        'IWDA1': ['VOO1', 'QQQM1'],
+        'VOO1': ['IWDA1', 'QQQM1'],
+        'QQQM1': ['IWDA1', 'VOO1'],
+        'IWDA2': ['VOO2', 'QQQM2'],
+        'VOO2': ['IWDA2', 'QQQM2'],
+        'QQQM2': ['IWDA2', 'VOO2']
+    };
+
+    const remainingIds = otherInputIds[changedInputId];
+    
+    if (percentage === 100) {
+        // 如果當前輸入框設置為 100%，其他輸入框設置為 0
+        remainingIds.forEach(id => {
+            const otherInput = document.getElementById(id);
+            otherInput.value = 0;
+            otherInput.dispatchEvent(new Event('input'));
+        });
+    } /* else if (percentage === 0) {
+        // 如果當前輸入框設置為 0，平均分配給其他輸入框
+        const remainingPercentage = 100 - percentage;
+        const splitPercentage = Math.floor(remainingPercentage / remainingIds.length);
+        
+        remainingIds.forEach((id, index) => {
+            const otherInput = document.getElementById(id);
+            // 最後一個輸入框調整到剩餘百分比，避免總和不是 100
+            const value = (index === remainingIds.length - 1) 
+                ? (remainingPercentage - splitPercentage * (remainingIds.length - 1))
+                : splitPercentage;
+            
+            otherInput.value = value;
+            otherInput.dispatchEvent(new Event('input'));
+        });
+    } */
+}
   </script>
 </html>
