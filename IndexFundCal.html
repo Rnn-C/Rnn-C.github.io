@@ -210,6 +210,7 @@
                 // yearly[i] = start + limitedYearly[i] + continuousYearly[i];
                 amount[i] = yearly[i] * (1 + yearRate[0]);
                 principal[i] = yearly[i];
+                yreturn[i] = amount[i] - principal[i];
             } else {
                 if (limitedYearly[i] > 0) { // 如果有限期月定投
                     yearly[i] = limitedYearly[i] + continuousYearly[i];
@@ -218,9 +219,8 @@
                 }
                 amount[i] = (amount[i-1] + yearly[i]) * (1 + yearRate[period]);
                 principal[i] = principal[i-1] + yearly[i];
+                yreturn[i] = amount[i] - amount[i-1];
             }
-            
-            yreturn[i] = amount[i] - principal[i];
             maverage[i] = yreturn[i] / 12;
         }
 
