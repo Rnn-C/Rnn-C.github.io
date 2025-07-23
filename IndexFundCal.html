@@ -201,17 +201,16 @@
             if (i === years1) {
                 period = 1;
             }
-            if (i === 0) {
+            if (i === 0) { // 第一年
                 if (limitedYearly[i] > 0) { // 如果有限期月定投
                     yearly[i] = start + limitedYearly[i] + continuousYearly[i];
                 } else {
                     yearly[i] = start + continuousYearly[i];
                 }
-                // yearly[i] = start + limitedYearly[i] + continuousYearly[i];
                 amount[i] = yearly[i] * (1 + yearRate[0]);
                 principal[i] = yearly[i];
                 yreturn[i] = amount[i] - principal[i];
-            } else {
+            } else { // 第二年開始
                 if (limitedYearly[i] > 0) { // 如果有限期月定投
                     yearly[i] = limitedYearly[i] + continuousYearly[i];
                 } else {
@@ -219,7 +218,7 @@
                 }
                 amount[i] = (amount[i-1] + yearly[i]) * (1 + yearRate[period]);
                 principal[i] = principal[i-1] + yearly[i];
-                yreturn[i] = amount[i] - amount[i-1];
+                yreturn[i] = amount[i] - amount[i-1] - yearly[i];
             }
             maverage[i] = yreturn[i] / 12;
         }
@@ -285,7 +284,7 @@
         const modeStr = ["保守", "一般", "進取"];
 
         let table1 = `
-            ${modeStr[mode]} 年利率 ${yearRate[0].toFixed(2)*100} %<p>
+            ${modeStr[mode]} 年利率 ${yearRate[0].toFixed(3)*100} %<p>
             <table>
             <tr>
                 <th></th>
@@ -351,7 +350,7 @@
             g2.fillStyle = 'white';
             g2.fillRect(0, 0, graph2.width, graph2.height);
             table2 = `
-                ${modeStr[mode]} 年利率 ${yearRate[1].toFixed(2)*100} %<p>
+                ${modeStr[mode]} 年利率 ${yearRate[1].toFixed(3)*100} %<p>
                 <table>
                 <tr>
                     <th></th>
