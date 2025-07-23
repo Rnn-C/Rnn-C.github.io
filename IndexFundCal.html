@@ -16,6 +16,10 @@
         float: left;
         width: 50%;
       }
+      .column3 {
+        float: left;
+        width: 33.3%;
+      }
       .row:after {
         content: "";
         display: table;
@@ -68,7 +72,8 @@
         </ul><p><br>
         <h2>期間與基金配比</h2>
         <a style="color:rgb(175, 175, 175);">*沒有特別需求可以無視第二階段，配比IWDA直接填100*</a><br>
-        <div class="column">
+        <div class="row">
+        <div class="column3">
             <h4>第一階段</h4>
                 <label for="years1">投資年期：</label>
                 <input type="number" id="years1" min="1" max="60"><p>
@@ -80,7 +85,7 @@
                 <label for="QQQM1">QQQM </label><input type="number" id="QQQM1" min="0" max="100" step="10"> %<p>
         </div>
 
-        <div class="column">
+        <div class="column3">
             <h4>第二階段</h4>
                  <label for="years2">投資年期：</label>
                 <input type="number" id="years2" min="1" max="60"><p>
@@ -89,21 +94,30 @@
                 <label for="VOO2">VOO </label><input type="number" id="VOO2" min="0" max="100" step="10"> %<p>
                 <label for="QQQM2">QQQM </label><input type="number" id="QQQM2" min="0" max="100" step="10"> %<p>
         </div>
+        <div class="column3">
+            <h4>提示</h4>
+            <ul>
+                <li>複利呈指數式增長，投資年期長（15-30年），效果更顯著。</li><br>
+                <li>前期的大筆投入比後期的更具影響力。</li><br>
+                <li>可以測試不同的持續月定投的金額、會否增長、增加頻率和增長金額，想像理想的投資生活。</li><br>
+                <li>如果預想有減少或者停止定投的時期，可以把最後的總額貼在初始投資來計算日後的增長。</li>
+            </ul>
+        </div>
+        </div>
         </form>
         <div style="padding:20px 0px;">
-            <a style="color: rgb(175, 175, 175);">*輸入太快按「計算」可能會導致出現錯誤警告或空缺結果，重新填寫後再計算即可。</a><p>
             <button onclick="calculate()" style="padding: 12px 200px;font-size: 16px;">計算</button>
             <button onclick="clean()" style="padding: 12px 50px;font-size: 16px;float:right;">重設</button><p></p>
         </div>
 
         <p><div id="modeButton"></div></p>
         
-        <div>
+        <div class="row">
             <div class="column" id="table1"></div>
             <canvas class="column" id="graph1"></canvas>
         </div><p>
         
-        <div>
+        <div class="row">
             <div class="column" id="table2"></div>
             <canvas class="column" id="graph2"></canvas>
         </div><p>
@@ -113,9 +127,6 @@
     </div>
   </body>
   <script>
-    function numberWithCommas(x) {
-        return x.toLocaleString('zh-Hant', {maximumFractionDigits: 0});
-    }
 
     let mode = 1;
 
@@ -131,10 +142,18 @@
             'VOO1', 'QQQM1', 'years2', 'IWDA2', 'VOO2', 'QQQM2'
         ];
 
+        // 確保從localStorage讀取值時，總是使用當前表單的最新值
         fields.forEach(field => {
             const element = document.getElementById(field);
-            element.value = parseFloat(localStorage.getItem(`${field}_`)) || '';
-        
+            // 優先使用當前輸入框的值，而不是localStorage的值
+            const storedValue = localStorage.getItem(`${field}_`);
+            
+            // 如果當前輸入框為空，且localStorage有值，則填入localStorage的值
+            if (!element.value && storedValue) {
+                element.value = storedValue;
+            }
+            
+            // 添加即時監聽，確保每次輸入都更新localStorage
             element.addEventListener('input', () => {
                 localStorage.setItem(`${field}_`, element.value);
             });
@@ -185,7 +204,7 @@
             if (i === 0) {
                 continuousYearly[i] = continuous * 12;
             } else {
-                if (continuousGrowY > 0 && (i+1) % continuousGrowY === 0) { //如果有增長
+                if (continuousGrowY > 0 && (i+2) % continuousGrowY === 0) { //如果有增長
                     if (continuousGrow > 0) {
                         continuousYearly[i] = continuousYearly[i-1] + continuousGrow*12;
                     } else {
@@ -223,15 +242,15 @@
             maverage[i] = yreturn[i] / 12;
         }
 
-        if (years1 === 0 && (limited === 0 && continuous === 0) && (IWDA1 === 0 && VOO1 === 0 && QQQM1 === 0)) {
-            alert("「投資年期」、「限期月定投」或「持續月定投」、「配比」必須填寫。");
+        if (!(years1 > 0 && (start > 0 || limited > 0 || continuous > 0) && (IWDA1 > 0 || VOO1 > 0 || QQQM1 > 0))) {
+            alert("「初始投資」「限期月定投」「持續月定投」任一、「投資年期」、「配比」必須填寫。");
             return;
         } else if (IWDA1 + VOO1 + QQQM1 != 100) {
             alert("「配比」加起來必須是100%。");
             return;
         }
         if (limited > 0) {
-            if ((limitedY === 0 && limitedM === 0)) {
+            if (!(limitedY > 0 && limitedM > 0)) {
                 alert("「限期月定投必須填寫「期限」。");
                 return;
             } else if (limitedY > totalYears || (limitedY === totalYears && limitedM > 0)) {
@@ -239,7 +258,7 @@
                 return;
             }
         }
-        if ((limitedY > 0 || limitedM > 0) && limited === 0) {
+        if ((limitedY > 0 || limitedM > 0) && !(limited > 0)) {
             alert("「限期月定投」尚未填寫「金額」。");
             return;
         }
@@ -262,7 +281,7 @@
             }
         }
         if (years2 > 0) {
-            if (IWDA2 === 0 && VOO2 === 0 && QQQM2 === 0) {
+            if (!(IWDA2 > 0 || VOO2 > 0 || QQQM2 > 0)) {
                 alert("「第二階段」未填寫「配比」。");
                 return;
             } else if (IWDA2 + VOO2 + QQQM2 != 100) {
@@ -270,7 +289,7 @@
                 return;
             }
         }
-        if ((IWDA2 > 0 || VOO2 > 0 || QQQM2 > 0) && years2 === 0) {
+        if ((IWDA2 > 0 || VOO2 > 0 || QQQM2 > 0) && !(years2 > 0)) {
             alert("「第二階段」未填寫「投資年期」。");
             return;
         }
@@ -296,7 +315,7 @@
         `;
 
         const graph1 = document.getElementById("graph1");
-        graph1.height = years1 * 13 + 40;
+        graph1.height = years1 * 10+40;
 
         const g1 = graph1.getContext("2d");
         g1.fillStyle = 'white';
@@ -343,7 +362,7 @@
         let table2 = "";
 
         const graph2 = document.getElementById("graph2");
-        graph2.height = years2 * 13 + 30;
+        graph2.height = years2 * 10+40;
         const g2 = graph2.getContext("2d");
 
         if (years2 > 0) { //如果有第二階段
@@ -417,9 +436,9 @@
         document.getElementById("frm").reset();
 
         const fields = [
-        'start', 'limited', 'limitedY', 'limitedM', 'continuous', 'continuousGrowY', 
-        'continuousGrow', 'continuousGrowPer', 'years1', 'IWDA1', 
-        'VOO1', 'QQQM1', 'years2', 'IWDA2', 'VOO2', 'QQQM2'
+            'start', 'limited', 'limitedY', 'limitedM', 'continuous', 'continuousGrowY', 
+            'continuousGrow', 'continuousGrowPer', 'years1', 'IWDA1', 
+            'VOO1', 'QQQM1', 'years2', 'IWDA2', 'VOO2', 'QQQM2'
         ];
 
         // 清除每個欄位的 localStorage
@@ -432,23 +451,25 @@
             }
         });
 
-        document.getElementById(field).value = 100;
-        localStorage.setItem(`${field}_`, '100');
-
         // 清除結果區域
         document.getElementById("modeButton").innerHTML = '';
         document.getElementById("table1").innerHTML = '';
         document.getElementById("table2").innerHTML = '';
         document.getElementById("cap").innerHTML = '';
 
-        // 清除畫布
+        // 清除畫布並重置
         const graph1 = document.getElementById("graph1");
         const graph2 = document.getElementById("graph2");
         const g1 = graph1.getContext("2d");
         const g2 = graph2.getContext("2d");
         
+        // 清除整個畫布
         g1.clearRect(0, 0, graph1.width, graph1.height);
         g2.clearRect(0, 0, graph2.width, graph2.height);
+
+        // 重置畫布
+        graph1.width = graph1.width;
+        graph2.width = graph2.width;
     }
 
     function fillPercentage(inputId, percentage) {
