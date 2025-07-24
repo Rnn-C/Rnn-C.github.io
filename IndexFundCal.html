@@ -250,7 +250,7 @@
             return;
         }
         if (limited > 0) {
-            if (!(limitedY > 0 && limitedM > 0)) {
+            if (!(limitedY > 0 || limitedM > 0)) {
                 alert("「限期月定投必須填寫「期限」。");
                 return;
             } else if (limitedY > totalYears || (limitedY === totalYears && limitedM > 0)) {
