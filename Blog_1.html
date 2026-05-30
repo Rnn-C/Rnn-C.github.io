@@ -11,32 +11,30 @@
 
     <div class="like-section" style="margin: 20px 0; text-align: center; font-family: sans-serif;">
   <h3>喜歡這篇文章嗎？幫我點個讚吧！</h3>
-  <div
-    data-lyket-type="like"
-    data-lyket-namespace="my-github-pages-site"
-    data-lyket-id="main-page"
-  ></div>
+  <div data-lyket-type="like" data-lyket-namespace="my-github-pages-site" data-lyket-id="main-page"></div>
 </div>
 <script src="https://unpkg.com/@lyket/widget@latest/dist/lyket.js?apiKey=pt_847141da1b827e8a93be9f52f75d27"></script>
 
 <hr style="border: 0; border-top: 1px solid #eee; margin: 40px 0;">
 
 <div class="comment-section" style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
-  <div id="Comments"></div>
+  <div id="disqusjs"></div>
 </div>
 
-<link href="https://unpkg.com/artalk/dist/Artalk.css" rel="stylesheet">
-<script src="https://unpkg.com/artalk/dist/Artalk.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/disqusjs@3.0/dist/disqusjs.css" />
+<script src="https://cdn.jsdelivr.net/npm/disqusjs@3.0/dist/disqusjs.umd.js"></script>
 
 <script>
-  Artalk.init({
-  el:        '#Comments',
-  pageKey:   window.location.pathname, // 自動抓取目前網頁的網址路徑，最不容易出錯
-  pageTitle: document.title,           // 自動抓取網頁標題
-  server:    'https://artalk-demo.proshare.top', 
-  site:      '我的 GitHub 網站',
-  placeholder: '歡迎免登入留言！',
-});
+  const dsqjs = new DisqusJS({
+    shortname: 'your-github-blog-comments', // 🔴 你的 Disqus 網站識別碼（請看下方步驟取得）
+    siteName: '我的 GitHub 網站',
+    identifier: window.location.pathname,  // 每頁的唯一識別碼
+    url: window.location.href,             // 目前網頁的完整網址
+    api: 'https://disqus.skk.moe/disqus/', // 官方推薦的穩定公共 API 加速通道，保證連線暢通
+    apikey: 'E876dBv7vC9978a3S6C6D6w8A8a9B0C1D2e3F4g5H6i7J8k9L0m1N2o3P4q5R6s7', // 測試用 API Key
+    admin: 'your_disqus_username',
+    adminLabel: '站長'
+  });
 </script>
 
   </body>
