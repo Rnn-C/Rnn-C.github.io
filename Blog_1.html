@@ -30,14 +30,13 @@
 
 <script>
   Artalk.init({
-    el:        '#Comments',
-    pageKey:   '/index.html', // 頁面唯一標識
-    pageTitle: '我的首頁',       // 頁面標題
-    // 🔴 這是極速測試用的公共伺服器（免設定、無 500 錯誤，可直接運作！）
-    server:    'https://artalk-demo.proshare.top',
-    site:      '我的 GitHub 網站',
-    placeholder: '歡迎免登入留言！',
-  });
+  el:        '#Comments',
+  pageKey:   window.location.pathname, // 自動抓取目前網頁的網址路徑，最不容易出錯
+  pageTitle: document.title,           // 自動抓取網頁標題
+  server:    'https://artalk-demo.proshare.top', 
+  site:      '我的 GitHub 網站',
+  placeholder: '歡迎免登入留言！',
+});
 </script>
 
   </body>
